@@ -1,4 +1,5 @@
 #include <FastLED.h>
+#include "secrets.h"
 
 // Define the data pin I'm using (D23)
 #define DATA_PIN 23
