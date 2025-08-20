@@ -108,6 +108,7 @@ bool auto_mode = true;
 unsigned long last_time_check = 0;
 int global_brightness = 150;
 
+
 // ------------------------------- SERVER -----------------------------------------
 
 #define WEB_SERVER_PORT 80
@@ -119,16 +120,26 @@ WebServer server(WEB_SERVER_PORT);
 
 // Handles insertion of the base server url (IP) in the brightness (shows the gui)
 void handle_root() {
-  String html = "<html><body>";
+  const String BUTTON_PRIMARY = "#ffffff";
+  const String BUTTON_SECONDARY = "#60A5FA";
+  //#38BDF8
+  //#60A5FA
+
+  String css = "body {font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}\n";
+  css += ".styled-button {width: 160px; border-radius: 40px; cursor: pointer; padding: 8px 16px; background-color: " + BUTTON_PRIMARY + "; border: 1px solid " + BUTTON_SECONDARY + "; color: " + BUTTON_SECONDARY + ";}\n";
+  css += ".styled-button:hover {background-color: " + BUTTON_SECONDARY + "; color: #ffffff; transition-property: background-color, color; transition-duration: 0.5s;}";
+  css += ".organized-col {display: flex; flex-direction: column; align-items:center; justify-content:center; gap: 15px;}";
+
+  String html = "<html><head><style>" + css + "</style></head><body>";
   html += "<h1>LED Strip Control</h1>";
   html += "<p>Click a button to change the color.</p>";
-  html += "<p><a href='/warm'><button>Set to Warm</button></a></p>";
-  html += "<p><a href='/cold'><button>Set to Cold</button></a></p>";
-  html += "<p><a href='/auto'><button>Set to Auto</button></a></p>";
+  html += "<p><a href='/warm'><button class='styled-button'>Set to Warm</button></a></p>";
+  html += "<p><a href='/cold'><button class='styled-button'>Set to Cold</button></a></p>";
+  html += "<p><a href='/auto'><button class='styled-button'>Set to Auto</button></a></p>";
   html += "<h2>Brightness Control</h2>";
-  html += "<form action='/brightness'>";
+  html += "<form class='organized-col' action='/brightness'>";
   html += "    <input type='range' name='value' min='0' max='255' step='1' value='" + String(global_brightness) + "'>";
-  html += "    <input type='submit' value='Set Brightness'>";
+  html += "    <input class='styled-button' type='submit' value='Set Brightness'>";
   html += "</form>";
   html += "</body></html>";
   server.send(200,"text/html",html);
