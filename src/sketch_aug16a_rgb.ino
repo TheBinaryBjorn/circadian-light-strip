@@ -5,17 +5,34 @@
 #include <vector>
 #include <WebServer.h>
 // ------------------------------- Function Declerations ---------------------------
+// Handles insertion of the base server url (IP) in the brightness (shows the gui)
 void handle_root();
+// Handles the press of the set to warm button, to set the strip to warm color.
 void handle_warm();
+// Handles the press of the set to cold button, to set the strip to cold color.
 void handle_cold();
+// Handles the press of the set to auto button, and sets the strip to the circadian automation.
 void handle_auto();
+// Colors all the leds in the given range in the given color. Non Inclusive (start to end - 1)
 void color_leds_range(CRGB color, int start, int end);
+/* 
+  Sets all the LEDs in the strip to a given color - in my setup, 0 to 119.
+  Utilizes NUM_LEDS const.
+*/
 void color_all_leds(CRGB color);
+// Wrapper function for FastLED.show(), shows the changes in the led.
 void led_show();
+// Switches the led color to the given color with a pulse animation.
 void switch_color(CRGB new_color);
+// A pulse animation for the led strip.
 void pulse();
+// Changes the strip's brightness to the given brightness
 void set_brightness(int brightness);
+// Changes the strip's brightness to the given brightness, without changing the global brightness variable.
+void set_temp_brightness(int brightness);
+// A wave pattern for the led strip.
 void wave_pattern();
+// A police pattern for the led strip, alternates Red and Blue.
 void police_pattern();
 // ------------------------------- RGB Strip ---------------------------------------
 // RGB Strip Constants
@@ -91,6 +108,7 @@ bool auto_mode = true;
 unsigned long last_time_check = 0;
 int global_brightness = 150;
 
+
 // ------------------------------- SERVER -----------------------------------------
 
 #define WEB_SERVER_PORT 80
@@ -100,22 +118,41 @@ WebServer server(WEB_SERVER_PORT);
 // Define the data pin I'm using (D23)
 #define DATA_PIN 23
 
+// Handles insertion of the base server url (IP) in the brightness (shows the gui)
 void handle_root() {
-  String html = "<html><body>";
+
+  String meta = "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
+
+  const String BUTTON_PRIMARY = "#ffffff";
+  const String BUTTON_SECONDARY = "#3B82F6";
+  //#38BDF8
+  //#60A5FA
+  // Blue - 500 - #3B82F6
+
+  String css = "body {font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}\n";
+  css += ".styled-button {width: 160px; border-radius: 40px; cursor: pointer; padding: 8px 16px; background-color: " + BUTTON_PRIMARY + "; border: 1px solid " + BUTTON_SECONDARY + "; color: " + BUTTON_SECONDARY + ";}\n";
+  css += ".styled-button:hover {background-color: " + BUTTON_SECONDARY + "; color: #ffffff; transition-property: background-color, color; transition-duration: 0.5s;}";
+  css += ".organized-col {display: flex; flex-direction: column; align-items:center; justify-content:center; gap: 15px;}";
+
+  String html = "<html><head>";
+  html += meta;
+  html += "<style>" + css + "</style>";
+  html += "</head><body>";
   html += "<h1>LED Strip Control</h1>";
   html += "<p>Click a button to change the color.</p>";
-  html += "<p><a href='/warm'><button>Set to Warm</button></a></p>";
-  html += "<p><a href='/cold'><button>Set to Cold</button></a></p>";
-  html += "<p><a href='/auto'><button>Set to Auto</button></a></p>";
+  html += "<p><a href='/warm'><button class='styled-button'>Set to Warm</button></a></p>";
+  html += "<p><a href='/cold'><button class='styled-button'>Set to Cold</button></a></p>";
+  html += "<p><a href='/auto'><button class='styled-button'>Set to Auto</button></a></p>";
   html += "<h2>Brightness Control</h2>";
-  html += "<form action='/brightness'>";
-  html += "    <input type='range' name='value' min='0' max='255' step='1' " + String(global_brightness) + ">";
-  html += "    <input type='submit' value='Set Brightness'>";
+  html += "<form class='organized-col' action='/brightness'>";
+  html += "    <input type='range' name='value' min='0' max='255' step='1' value='" + String(global_brightness) + "'>";
+  html += "    <input class='styled-button' type='submit' value='Set Brightness'>";
   html += "</form>";
   html += "</body></html>";
   server.send(200,"text/html",html);
 }
 
+// Handles the press of the set to warm button, to set the strip to warm color.
 void handle_warm() {
   switch_color(WARM);
   warm_set = true;
@@ -124,6 +161,7 @@ void handle_warm() {
   server.send(200,"text/plain","Switched to Warm");
 }
 
+// Handles the press of the set to cold button, to set the strip to cold color.
 void handle_cold() {
   switch_color(COLD);
   warm_set = false;
@@ -132,6 +170,7 @@ void handle_cold() {
   server.send(200,"text/plain","Switched to Cold");
 }
 
+// Handles the press of the set to auto button, and sets the strip to the circadian automation.
 void handle_auto() {
   auto_mode = true;
   server.send(200,"text/plain","Switched to Auto");
@@ -224,7 +263,7 @@ void loop() {
 
 // ----------------------------------------------- Color Functions ----------------------------------------------------------
 
-// Sets LEDs in a given range to a given color.
+// Colors all the leds in the given range in the given color. Non Inclusive (start to end - 1)
 void color_leds_range(CRGB color, int start, int end) {
   // check if ranges are valid.
   if(end > NUM_LEDS || end < 0) {
@@ -241,23 +280,26 @@ void color_leds_range(CRGB color, int start, int end) {
   led_show();
 }
 
-// Sets all the LEDs in the strip to a given color - in my setup, 0 to 119
+/* 
+  Sets all the LEDs in the strip to a given color - in my setup, 0 to 119.
+  Utilizes NUM_LEDS const.
+*/
 void color_all_leds(CRGB color) {
   color_leds_range(color,0,NUM_LEDS);
 }
 
-// Wraper Design pattern, in case FastLED renames/decrypts function.
+// Wrapper function for FastLED.show(), shows the changes in the led.
 void led_show() {
   FastLED.show();
 }
 
-// =================================================== Not Important ============================================================
-
+// Switches the led color to the given color with a pulse animation.
 void switch_color(CRGB new_color) {
   color_all_leds(new_color);
   pulse();
 }
 
+// Changes the strip's brightness to the given brightness
 void pulse() {
   std::vector<int> brightness_array = {0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255};
   for(int i = 0; i < brightness_array.size(); i++) {
@@ -271,17 +313,20 @@ void pulse() {
   }
 }
 
+// Changes the strip's brightness to the given brightness, without changing the global brightness variable.
 void set_temp_brightness(int brightness) {
   FastLED.setBrightness(brightness);
   led_show();
 }
 
+// Changes the strip's brightness to the given brightness, including the global brightness variable.
 void set_brightness(int brightness) {
   global_brightness = brightness;
   FastLED.setBrightness(brightness);
   led_show();
 }
 
+// A wave pattern for the led strip.
 void wave_pattern(CRGB color) {
     for(int i = 0; i<NUM_LEDS;i++) {
     leds[i] = color;
@@ -296,6 +341,7 @@ void wave_pattern(CRGB color) {
   }
 }
 
+// A police pattern for the led strip, alternates Red and Blue.
 void police_pattern() {
     pattern_counter++%2 == 0 ? color_all_leds(CRGB::Red) : color_all_leds(CRGB::Blue);
     if(pattern_counter>20)
