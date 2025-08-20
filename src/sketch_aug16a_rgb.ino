@@ -29,7 +29,7 @@ void pulse();
 // Changes the strip's brightness to the given brightness
 void set_brightness(int brightness);
 // Changes the strip's brightness to the given brightness, without changing the global brightness variable.
-void set_temp_brightness(int brightness)
+void set_temp_brightness(int brightness);
 // A wave pattern for the led strip.
 void wave_pattern();
 // A police pattern for the led strip, alternates Red and Blue.
@@ -127,7 +127,7 @@ void handle_root() {
   html += "<p><a href='/auto'><button>Set to Auto</button></a></p>";
   html += "<h2>Brightness Control</h2>";
   html += "<form action='/brightness'>";
-  html += "    <input type='range' name='value' min='0' max='255' step='1' " + String(global_brightness) + ">";
+  html += "    <input type='range' name='value' min='0' max='255' step='1' value='" + String(global_brightness) + "'>";
   html += "    <input type='submit' value='Set Brightness'>";
   html += "</form>";
   html += "</body></html>";
