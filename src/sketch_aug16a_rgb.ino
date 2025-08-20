@@ -3,11 +3,21 @@
 #include <WiFi.h>
 #include <time.h>
 #include <vector>
-
-
-// Define the data pin I'm using (D23)
-#define DATA_PIN 23
-
+#include <WebServer.h>
+// ------------------------------- Function Declerations ---------------------------
+void handle_root();
+void handle_warm();
+void handle_cold();
+void handle_auto();
+void color_leds_range(CRGB color, int start, int end);
+void color_all_leds(CRGB color);
+void led_show();
+void switch_color(CRGB new_color);
+void pulse();
+void set_brightness(int brightness);
+void wave_pattern();
+void police_pattern();
+// ------------------------------- RGB Strip ---------------------------------------
 // RGB Strip Constants
 // Define Number of LEDs
 #define NUM_LEDS 120
@@ -77,8 +87,66 @@ const int SUNSET = 19;
 // Flags to ensure color is switched only once at needed time.
 bool warm_set = false;
 bool cold_set = false;
+bool auto_mode = true;
+unsigned long last_time_check = 0;
+int global_brightness = 150;
 
+// ------------------------------- SERVER -----------------------------------------
 
+#define WEB_SERVER_PORT 80
+
+WebServer server(WEB_SERVER_PORT);
+
+// Define the data pin I'm using (D23)
+#define DATA_PIN 23
+
+void handle_root() {
+  String html = "<html><body>";
+  html += "<h1>LED Strip Control</h1>";
+  html += "<p>Click a button to change the color.</p>";
+  html += "<p><a href='/warm'><button>Set to Warm</button></a></p>";
+  html += "<p><a href='/cold'><button>Set to Cold</button></a></p>";
+  html += "<p><a href='/auto'><button>Set to Auto</button></a></p>";
+  html += "<h2>Brightness Control</h2>";
+  html += "<form action='/brightness'>";
+  html += "    <input type='range' name='value' min='0' max='255' step='1' " + String(global_brightness) + ">";
+  html += "    <input type='submit' value='Set Brightness'>";
+  html += "</form>";
+  html += "</body></html>";
+  server.send(200,"text/html",html);
+}
+
+void handle_warm() {
+  switch_color(WARM);
+  warm_set = true;
+  cold_set = false;
+  auto_mode = false;
+  server.send(200,"text/plain","Switched to Warm");
+}
+
+void handle_cold() {
+  switch_color(COLD);
+  warm_set = false;
+  cold_set = true;
+  auto_mode = false;
+  server.send(200,"text/plain","Switched to Cold");
+}
+
+void handle_auto() {
+  auto_mode = true;
+  server.send(200,"text/plain","Switched to Auto");
+}
+
+void handle_brightness() {
+  if(server.hasArg("value")) {
+    int new_brightness = server.arg("value").toInt();
+    set_brightness(new_brightness);
+    server.sendHeader("Location","/");
+    server.send(302,"text/plain","Brightness set successfully.");
+  } else {
+    server.send(400, "text/plain", "Mising brightness parameter");
+  }
+}
 // ---------------------------------------------------- SETUP --------------------------------------------------------
 
 void setup() {
@@ -86,6 +154,7 @@ void setup() {
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
   color_all_leds(CRGB::Green);
   led_show();
+  set_brightness(global_brightness);
 
   for(int i = 0; i<3;i++) {
     pulse();
@@ -105,37 +174,52 @@ void setup() {
 
   // Initialize the time from the NTP Server
   configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
+
+  // Set up web server routes
+  server.on("/",handle_root);
+  server.on("/warm",handle_warm);
+  server.on("/cold",handle_cold);
+  server.on("/auto",handle_auto);
+  server.on("/brightness",handle_brightness);
+
+  //Start the server
+  server.begin();
+  Serial.println("HTTP server started on: ");
+  Serial.print(WiFi.localIP());
 }
 // --------------------------------------------------- LOOP -------------------------------------------------------------
 
 void loop() {
   // Change strip colors at sunrise and sunset.
+  server.handleClient();
   // Get the current time.
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)) {
-    Serial.println("Failed to obtain time");
-    return;
+  if(auto_mode) {
+    if(millis() - last_time_check > ONE_MINUTE) {
+      last_time_check = millis();
+      struct tm timeinfo;
+      if(!getLocalTime(&timeinfo)) {
+        Serial.println("Failed to obtain time");
+        return;
+      }
+
+      // Print local time to Serial Monitor
+      Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+
+      int current_hour = timeinfo.tm_hour;
+      Serial.println(current_hour);
+      if(current_hour >= SUNSET && !warm_set) {
+        switch_color(WARM);
+        warm_set = true;
+        cold_set = false;
+      }
+
+      if(current_hour >= SUNRISE && current_hour < SUNSET && !cold_set) {
+        switch_color(COLD);
+        cold_set = true;
+        warm_set = false;
+      }
+    }
   }
-
-  // Print local time to Serial Monitor
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-
-  int current_hour = timeinfo.tm_hour;
-  Serial.println(current_hour);
-  if(current_hour >= SUNSET && !warm_set) {
-    switch_color(WARM);
-    warm_set = true;
-    cold_set = false;
-  }
-
-  if(current_hour >= SUNRISE && current_hour < SUNSET && !cold_set) {
-    switch_color(COLD);
-    cold_set = true;
-    warm_set = false;
-  }
-
-  // Check the time 1 minute
-  delay(ONE_MINUTE);
 }
 
 // ----------------------------------------------- Color Functions ----------------------------------------------------------
@@ -177,12 +261,23 @@ void switch_color(CRGB new_color) {
 void pulse() {
   std::vector<int> brightness_array = {0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255};
   for(int i = 0; i < brightness_array.size(); i++) {
-    set_brightness(brightness_array[i]);
-    delay(25);
+    if(brightness_array[i]<=global_brightness) {
+      set_temp_brightness(brightness_array[i]);
+      delay(25);
+    } else {
+      set_temp_brightness(global_brightness);
+      break;
+    }
   }
 }
 
+void set_temp_brightness(int brightness) {
+  FastLED.setBrightness(brightness);
+  led_show();
+}
+
 void set_brightness(int brightness) {
+  global_brightness = brightness;
   FastLED.setBrightness(brightness);
   led_show();
 }
