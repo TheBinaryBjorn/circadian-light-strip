@@ -129,25 +129,36 @@ void handle_root() {
   //#60A5FA
   // Blue - 500 - #3B82F6
 
-  String css = "body {font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}\n";
+  String css = "body {background-color: #F3F4F6; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}\n";
   css += ".styled-button {width: 160px; border-radius: 40px; cursor: pointer; padding: 8px 16px; background-color: " + BUTTON_PRIMARY + "; border: 1px solid " + BUTTON_SECONDARY + "; color: " + BUTTON_SECONDARY + ";}\n";
   css += ".styled-button:hover {background-color: " + BUTTON_SECONDARY + "; color: #ffffff; transition-property: background-color, color; transition-duration: 0.5s;}";
   css += ".organized-col {display: flex; flex-direction: column; align-items:center; justify-content:center; gap: 15px;}";
+  css += ".container {width: 400px; background-color: #ffffff; padding: 8px 16px; border-radius: 15px; box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;}";
 
   String html = "<html><head>";
   html += meta;
   html += "<style>" + css + "</style>";
   html += "</head><body>";
-  html += "<h1>LED Strip Control</h1>";
+  html += "<div class='organized-col'>";
+  html += "<div class='container organized-col'>";
+  html += "<h1>Settings</h1>";
+  html += "<p>Manage your color and brightness for RGB strip.</p>";
+  html += "</div>";
+  html += "<div class='container organized-col'>";
+  html += "<h2>Color</h2>";
   html += "<p>Click a button to change the color.</p>";
   html += "<p><a href='/warm'><button class='styled-button'>Set to Warm</button></a></p>";
   html += "<p><a href='/cold'><button class='styled-button'>Set to Cold</button></a></p>";
   html += "<p><a href='/auto'><button class='styled-button'>Set to Auto</button></a></p>";
+  html += "</div>";
+  html += "<div class='container organized-col'>";
   html += "<h2>Brightness Control</h2>";
   html += "<form class='organized-col' action='/brightness'>";
   html += "    <input type='range' name='value' min='0' max='255' step='1' value='" + String(global_brightness) + "'>";
   html += "    <input class='styled-button' type='submit' value='Set Brightness'>";
   html += "</form>";
+  html += "</div>";
+  html += "</div>";
   html += "</body></html>";
   server.send(200,"text/html",html);
 }
