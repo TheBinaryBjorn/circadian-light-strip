@@ -106,7 +106,7 @@ bool warm_set = false;
 bool cold_set = false;
 bool auto_mode = true;
 unsigned long last_time_check = 0;
-int global_brightness = 150;
+int global_brightness = 127;
 
 
 // ------------------------------- SERVER -----------------------------------------
@@ -169,7 +169,8 @@ void handle_warm() {
   warm_set = true;
   cold_set = false;
   auto_mode = false;
-  server.send(200,"text/plain","Switched to Warm");
+  server.sendHeader("Location","/");
+  server.send(302,"text/plain","Switched to Warm");
 }
 
 // Handles the press of the set to cold button, to set the strip to cold color.
@@ -178,13 +179,15 @@ void handle_cold() {
   warm_set = false;
   cold_set = true;
   auto_mode = false;
-  server.send(200,"text/plain","Switched to Cold");
+  server.sendHeader("Location","/");
+  server.send(302,"text/plain","Switched to Cold");
 }
 
 // Handles the press of the set to auto button, and sets the strip to the circadian automation.
 void handle_auto() {
   auto_mode = true;
-  server.send(200,"text/plain","Switched to Auto");
+  server.sendHeader("Location","/");
+  server.send(302,"text/plain","Switched to Auto");
 }
 
 void handle_brightness() {
@@ -194,7 +197,7 @@ void handle_brightness() {
     server.sendHeader("Location","/");
     server.send(302,"text/plain","Brightness set successfully.");
   } else {
-    server.send(400, "text/plain", "Mising brightness parameter");
+    server.send(400, "text/plain", "Missing brightness parameter");
   }
 }
 // ---------------------------------------------------- SETUP --------------------------------------------------------
