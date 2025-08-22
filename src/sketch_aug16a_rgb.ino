@@ -106,8 +106,7 @@ bool warm_set = false;
 bool cold_set = false;
 bool auto_mode = true;
 unsigned long last_time_check = 0;
-int global_brightness = 150;
-
+int global_brightness = 127;
 
 // ------------------------------- SERVER -----------------------------------------
 
@@ -129,25 +128,54 @@ void handle_root() {
   //#60A5FA
   // Blue - 500 - #3B82F6
 
-  String css = "body {font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}\n";
+  String css = "body {background-color: #F3F4F6; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}\n";
   css += ".styled-button {width: 160px; border-radius: 40px; cursor: pointer; padding: 8px 16px; background-color: " + BUTTON_PRIMARY + "; border: 1px solid " + BUTTON_SECONDARY + "; color: " + BUTTON_SECONDARY + ";}\n";
   css += ".styled-button:hover {background-color: " + BUTTON_SECONDARY + "; color: #ffffff; transition-property: background-color, color; transition-duration: 0.5s;}";
-  css += ".organized-col {display: flex; flex-direction: column; align-items:center; justify-content:center; gap: 15px;}";
+  css += ".organized-col {display: flex; flex-direction: column; align-items:center; justify-content:center; gap: 20px; text-align: center;}";
+  css += ".container {width: 80vw; max-width: 500px; background-color: #ffffff; padding: 16px; border-radius: 15px; box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px; display: flex; flex-direction: column; align-items:center; gap:10px;}";
+  css += "h1, h2, p, button, input, form {margin: 1px; padding: 1px;}";
 
+  // A generic API Call JavaScript to handle all kinds of API Calls.
+  String js = "async function sendApiCall(endpoint) {\n";
+  js += "  try {\n";
+  js += "    const response = await fetch(endpoint);\n";
+  js += "    if (response.ok) {\n";
+  js += "      const message = await response.text();\n";
+  js += "      alert('Success: ' + message);\n";
+  js += "    } else {\n";
+  js += "      alert('Error: ' + response.status + ' ' + response.statusText);\n";
+  js += "    }\n";
+  js += "  } catch (error) {\n";
+  js += "    alert('Network error: ' + error);\n";
+  js += "  }\n";
+  js += "}\n";
+  //Vectors and icons by <a href="https://www.svgrepo.com" target="_blank">SVG Repo</a>
   String html = "<html><head>";
   html += meta;
   html += "<style>" + css + "</style>";
+  html += "<script>" + js + "</script>";
   html += "</head><body>";
-  html += "<h1>LED Strip Control</h1>";
+  html += "<div class='organized-col'>";
+  html += "<div class='container'>";
+  html += "<svg height='64px' width='64px' version='1.1' id='Layer_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 512 512' xml:space='preserve' fill='#000000'><g id='SVGRepo_bgCarrier' stroke-width='0'></g><g id='SVGRepo_tracerCarrier' stroke-linecap='round' stroke-linejoin='round'></g><g id='SVGRepo_iconCarrier'> <path style='fill:#B9B9B9;' d='M512,297.793v-83.585l-52.337-5.233c-5.266-22.911-14.302-44.37-26.41-63.713l33.319-40.724 l-59.111-59.111l-40.724,33.319c-19.343-12.108-40.802-21.144-63.713-26.41L297.793,0h-83.585l-5.233,52.337 c-22.911,5.266-44.37,14.302-63.713,26.41l-40.724-33.319l-59.111,59.111l33.319,40.724c-12.108,19.343-21.144,40.802-26.41,63.713 L0,214.207v83.585l52.337,5.233c5.266,22.911,14.302,44.37,26.41,63.713l-33.319,40.724l59.111,59.111l40.724-33.319 c19.343,12.108,40.802,21.144,63.713,26.41L214.207,512h83.585l5.233-52.337c22.911-5.266,44.37-14.302,63.713-26.41l40.724,33.319 l59.111-59.111l-33.319-40.724c12.108-19.343,21.144-40.802,26.41-63.713L512,297.793z M257.834,431.532 c-0.608,0.011-1.227,0.011-1.834,0.011c-96.942,0-175.543-78.589-175.543-175.543S159.058,80.457,256,80.457 c0.608,0,1.227,0,1.834,0.011C335.298,81.684,397.785,159.8,397.785,256S335.298,430.316,257.834,431.532z'></path> <path style='fill:#737373;' d='M257.866,80.47v82.743c50.408,0.997,90.972,42.142,90.972,92.788s-40.564,91.791-90.972,92.788 v82.743c96.095-0.996,173.677-79.196,173.677-175.531S353.961,81.465,257.866,80.47z'></path> <path style='fill:#969696;' d='M257.834,80.468c-0.608-0.011-1.227-0.011-1.834-0.011c-96.942,0-175.543,78.589-175.543,175.543 S159.058,431.543,256,431.543c0.608,0,1.227,0,1.834-0.011c77.464-1.215,139.95-79.332,139.95-175.532 S335.298,81.684,257.834,80.468z M256.002,348.835c-51.271,0-92.835-41.564-92.835-92.835s41.564-92.835,92.835-92.835 s92.835,41.564,92.835,92.835S307.273,348.835,256.002,348.835z'></path> <path style='fill:#B9B9B9;' d='M256,143.473l-10.165,17.554l10.167,16.204c43.503,0,78.769,35.266,78.769,78.769 s-35.266,78.769-78.769,78.769l-10.517,16.159L256,368.527c62.149,0,112.527-50.379,112.527-112.527S318.149,143.473,256,143.473z'></path> <path style='fill:#DCDCDC;' d='M177.233,256c0-43.502,35.265-78.768,78.767-78.769v-33.758 c-62.149,0-112.527,50.379-112.527,112.527S193.851,368.527,256,368.527v-33.758C212.498,334.768,177.233,299.502,177.233,256z'></path> </g></svg>";
+  html += "<h1>Settings</h1>";
+  html += "<p>Manage your overall setup and preferences for the light strip, such as color and brightness.</p>";
+  html += "</div>";
+  html += "<div class='container'>";
+  html += "<h2>Color</h2>";
   html += "<p>Click a button to change the color.</p>";
-  html += "<p><a href='/warm'><button class='styled-button'>Set to Warm</button></a></p>";
-  html += "<p><a href='/cold'><button class='styled-button'>Set to Cold</button></a></p>";
-  html += "<p><a href='/auto'><button class='styled-button'>Set to Auto</button></a></p>";
-  html += "<h2>Brightness Control</h2>";
+  html += "<button class='styled-button' onclick=\"sendApiCall('/warm')\">Set to Warm</button>";
+  html += "<button class='styled-button' onclick=\"sendApiCall('/cold')\">Set to Cold</button>";
+  html += "<button class='styled-button' onclick=\"sendApiCall('/auto')\">Set to Auto</button>";
+  html += "</div>";
+  html += "<div class='container organized-col'>";
+  html += "<h2>Brightness</h2>";
   html += "<form class='organized-col' action='/brightness'>";
   html += "    <input type='range' name='value' min='0' max='255' step='1' value='" + String(global_brightness) + "'>";
   html += "    <input class='styled-button' type='submit' value='Set Brightness'>";
   html += "</form>";
+  html += "</div>";
+  html += "</div>";
   html += "</body></html>";
   server.send(200,"text/html",html);
 }
@@ -183,7 +211,7 @@ void handle_brightness() {
     server.sendHeader("Location","/");
     server.send(302,"text/plain","Brightness set successfully.");
   } else {
-    server.send(400, "text/plain", "Mising brightness parameter");
+    server.send(400, "text/plain", "Missing brightness parameter");
   }
 }
 // ---------------------------------------------------- SETUP --------------------------------------------------------
