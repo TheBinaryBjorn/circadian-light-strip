@@ -108,7 +108,6 @@ bool auto_mode = true;
 unsigned long last_time_check = 0;
 int global_brightness = 127;
 
-
 // ------------------------------- SERVER -----------------------------------------
 
 #define WEB_SERVER_PORT 80
@@ -135,9 +134,25 @@ void handle_root() {
   css += ".organized-col {display: flex; flex-direction: column; align-items:center; justify-content:center; gap: 15px;}";
   css += ".container {width: 400px; background-color: #ffffff; padding: 8px 16px; border-radius: 15px; box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;}";
 
+  // A generic API Call JavaScript to handle all kinds of API Calls.
+  String js = "async function sendApiCall(endpoint) {\n";
+  js += "  try {\n";
+  js += "    const response = await fetch(endpoint);\n";
+  js += "    if (response.ok) {\n";
+  js += "      const message = await response.text();\n";
+  js += "      alert('Success: ' + message);\n";
+  js += "    } else {\n";
+  js += "      alert('Error: ' + response.status + ' ' + response.statusText);\n";
+  js += "    }\n";
+  js += "  } catch (error) {\n";
+  js += "    alert('Network error: ' + error);\n";
+  js += "  }\n";
+  js += "}\n";
+
   String html = "<html><head>";
   html += meta;
   html += "<style>" + css + "</style>";
+  html += "<script>" + js + "</script>";
   html += "</head><body>";
   html += "<div class='organized-col'>";
   html += "<div class='container organized-col'>";
@@ -147,9 +162,9 @@ void handle_root() {
   html += "<div class='container organized-col'>";
   html += "<h2>Color</h2>";
   html += "<p>Click a button to change the color.</p>";
-  html += "<p><a href='/warm'><button class='styled-button'>Set to Warm</button></a></p>";
-  html += "<p><a href='/cold'><button class='styled-button'>Set to Cold</button></a></p>";
-  html += "<p><a href='/auto'><button class='styled-button'>Set to Auto</button></a></p>";
+  html += "<button class='styled-button' onclick=\"sendApiCall('/warm')\">Set to Warm</button>";
+  html += "<button class='styled-button' onclick=\"sendApiCall('/cold')\">Set to Cold</button>";
+  html += "<button class='styled-button' onclick=\"sendApiCall('/auto')\">Set to Auto</button>";
   html += "</div>";
   html += "<div class='container organized-col'>";
   html += "<h2>Brightness Control</h2>";
@@ -169,8 +184,7 @@ void handle_warm() {
   warm_set = true;
   cold_set = false;
   auto_mode = false;
-  server.sendHeader("Location","/");
-  server.send(302,"text/plain","Switched to Warm");
+  server.send(200,"text/plain","Switched to Warm");
 }
 
 // Handles the press of the set to cold button, to set the strip to cold color.
@@ -179,15 +193,13 @@ void handle_cold() {
   warm_set = false;
   cold_set = true;
   auto_mode = false;
-  server.sendHeader("Location","/");
-  server.send(302,"text/plain","Switched to Cold");
+  server.send(200,"text/plain","Switched to Cold");
 }
 
 // Handles the press of the set to auto button, and sets the strip to the circadian automation.
 void handle_auto() {
   auto_mode = true;
-  server.sendHeader("Location","/");
-  server.send(302,"text/plain","Switched to Auto");
+  server.send(200,"text/plain","Switched to Auto");
 }
 
 void handle_brightness() {
