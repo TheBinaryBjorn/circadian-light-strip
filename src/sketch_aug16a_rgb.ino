@@ -149,6 +149,13 @@ void handle_root() {
   js += "    alert('Network error: ' + error);\n";
   js += "  }\n";
   js += "}\n";
+  js += "async function setColor(hex) {\n";
+  js += "    console.log(hex);\n";
+  js += "    if(hex.startsWith('#'))\n";
+  js += "        hex = hex.substring(1);";
+  js += "    console.log(hex);\n";
+  js += "    await sendApiCall(`setColor?hex=${hex}`);\n";
+  js += "}\n";
   //Vectors and icons by <a href="https://www.svgrepo.com" target="_blank">SVG Repo</a>
   String html = "<html><head>";
   html += meta;
@@ -167,6 +174,7 @@ void handle_root() {
   html += "<button class='styled-button' onclick=\"sendApiCall('/warm')\">Set to Warm</button>";
   html += "<button class='styled-button' onclick=\"sendApiCall('/cold')\">Set to Cold</button>";
   html += "<button class='styled-button' onclick=\"sendApiCall('/auto')\">Set to Auto</button>";
+  html += "<input type='color' onchange='setColor(this.value)' id='colorPicker' value='#ff0000'/>";
   html += "</div>";
   html += "<div class='container organized-col'>";
   html += "<h2>Brightness</h2>";
@@ -178,6 +186,48 @@ void handle_root() {
   html += "</div>";
   html += "</body></html>";
   server.send(200,"text/html",html);
+}
+
+void handle_color() {
+  // server.hasArg inspects the url (http get request) for query var
+  // localhost/setColor?hex=feffff
+  //                   ^
+  if(server.hasArg("hex")) {
+    // hex is received as a String.
+    String hex = server.arg("hex");
+
+    // Convert String to char* and then to long.
+    long hex_value = strtol(hex.c_str(), NULL, 16);
+    //      R        G        B
+    //     FE       FF        FF
+    //              __
+    //             _||_
+    //             \  /
+    //              \/
+    // ____R____ ____G____ ____B____
+    // 1111 1110 1111 1111 1111 1111 
+    //
+    // 0000 0000 0000 0000 1110 1111 (>> 16)
+    // 0000 0000 0000 0000 1111 1111 (0xFF)
+    // _____________________________
+    // 0000 0000 0000 0000 1110 1111 (& 0xFF)
+    // Get the first byte for red, bitwise and with 0xFF for a mask
+    // to get explicitly only the byte we need.
+    byte r = (hex_value >> 16) & 0xFF;
+    // Get second byte for green
+    byte g = (hex_value >> 8) & 0xFF;
+    // Get third byte for blue.
+    byte b = hex_value & 0xFF;
+
+    CRGB new_color = CRGB(r, g, b);
+    switch_color(new_color);
+
+    auto_mode = false;
+
+    server.send(200, "text/plain", "Color set successfully.");
+  } else {
+    server.send(400, "text/plain", "Error: No hex value provided.");
+  }
 }
 
 // Handles the press of the set to warm button, to set the strip to warm color.
@@ -248,6 +298,7 @@ void setup() {
   server.on("/cold",handle_cold);
   server.on("/auto",handle_auto);
   server.on("/brightness",handle_brightness);
+  server.on("/setColor", handle_color);
 
   //Start the server
   server.begin();
