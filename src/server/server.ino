@@ -3,6 +3,8 @@
 #include <WiFi.h>
 #include "secrets.h"
 #include <PicoMQTT.h>
+#include <time.h>
+
 #define WEB_SERVER_PORT 80
 
 // Create a web server.
@@ -10,6 +12,55 @@ WebServer server(WEB_SERVER_PORT);
 
 // Create MQTT Broker
 PicoMQTT::Server mqttBroker;
+
+// Set up NTP Protocol
+const long GMT_OFFSET_SEC = 10800;
+const int DAYLIGHT_OFFSET_SEC = 0;
+const char* NTP_SERVER = "pool.ntp.org";
+
+// Time Constants (Milisec)
+const long ONE_MINUTE = 60000;
+const long FIVE_MINUTES = 5 * ONE_MINUTE;
+const long TEN_MINUTES = 2 * FIVE_MINUTES;
+const long THIRTY_MINUTES = 3 * TEN_MINUTES;
+const long ONE_HOUR = 6 * TEN_MINUTES;
+const int SUNRISE = 6;
+const int SUNSET = 19;
+
+// Flags to ensure color is switched only once at needed time.
+bool warm_set = false;
+bool cold_set = false;
+bool auto_mode = true;
+unsigned long last_time_check = 0;
+int global_brightness = 127;
+
+// Colors:
+const String WARM = "FF2800";
+const String COLD = "00FFFF";
+
+// Handles the press of the set to warm button, to set the strip to warm color.
+void handleWarm() {
+  publishColor(WARM.c_str());
+  warm_set = true;
+  cold_set = false;
+  auto_mode = false;
+  server.send(200,"text/plain","Switched to Warm");
+}
+
+// Handles the press of the set to cold button, to set the strip to cold color.
+void handleCold() {
+  publishColor(COLD.c_str());
+  warm_set = false;
+  cold_set = true;
+  auto_mode = false;
+  server.send(200,"text/plain","Switched to Cold");
+}
+
+// Handles the press of the set to auto button, and sets the strip to the circadian automation.
+void handleAuto() {
+  auto_mode = true;
+  server.send(200,"text/plain","Switched to Auto");
+}
 
 void handleRoot() {
   // Open index.html (gui) in read mode.
@@ -37,34 +88,15 @@ void handleRoot() {
 
 void handleColor() {
   // Extract color from server parameters.
-  // Example - 0xFFFFFF - 16,777,215, int goes all the way up to 2,147,483,647.
-  // 0xFFFFFF
-  // 1111 1111 1111 1111 1111 1111
-  // In this setting, both long and int are 4 bytes.
   String color = server.arg("hex");
-  /*
-  Serial.println(color);
-  // Convert string to int.
-  int rgb = std::stoi(color.c_str(), NULL, 16);
-  Serial.println(rgb);
-  // Extract R, G and B values.
-  // 1111 1111 1111 1111 1111 1111 => (Shift right 16 bits) 0000 0000 0000 0000 1111 1111
-  //                                                        0000 0000 0000 0000 1111 1111
-  int red = (rgb >> 16) & 0xFF;
-  Serial.println(red);
-  // 1111 1111 1111 1111 1111 1111 => (Shift right 8 bits) 0000 0000 1111 1111 1111 1111
-  //                                                       0000 0000 0000 0000 1111 1111
-  int green = (rgb >> 8) & 0xFF;
-  Serial.println(green);
-  // 1111 1111 1111 1111 1111 1111
-  // 0000 0000 0000 0000 1111 1111
-  int blue = rgb & 0xFF;
-  Serial.println(blue);
-  */
   // Send message to registered clients (RGB Controllers) to change color.
   // MQTT BROKER
-  mqttBroker.publish("color", color.c_str());
+  publishColor(color.c_str());
 }
+
+void publishColor(const char* colorHex) {
+    mqttBroker.publish("color", colorHex);
+} 
 
 void setup() {
   /* 
@@ -123,6 +155,9 @@ void setup() {
     Serial.println("Aborting.");
   }
 
+  // Initialize the time from the NTP Server
+  configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
+
   /*
     Initialize MQTT Broker
   */
@@ -135,6 +170,9 @@ void setup() {
   */
   server.on("/",handleRoot);
   server.on("/setColor", handleColor);
+  server.on("/cold", handleCold);
+  server.on("/warm",handleWarm);
+  server.on("/auto",handleAuto);
   server.begin();
   Serial.println("HTTP Server: Up.");
   Serial.print("Server IP: ");
@@ -144,6 +182,33 @@ void setup() {
 void loop() {
   server.handleClient();
   mqttBroker.loop();
+  if(auto_mode) {
+    if(millis() - last_time_check > ONE_MINUTE) {
+      last_time_check = millis();
+      struct tm timeinfo;
+      if(!getLocalTime(&timeinfo)) {
+        Serial.println("Failed to obtain time");
+        return;
+      }
+
+      // Print local time to Serial Monitor
+      Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+
+      int current_hour = timeinfo.tm_hour;
+      Serial.println(current_hour);
+      if(current_hour >= SUNSET && !warm_set) {
+        publishColor(WARM.c_str());
+        warm_set = true;
+        cold_set = false;
+      }
+
+      if(current_hour >= SUNRISE && current_hour < SUNSET && !cold_set) {
+        publishColor(COLD.c_str());
+        cold_set = true;
+        warm_set = false;
+      }
+    }
+  }
 }
 
 /*
