@@ -5,6 +5,9 @@
 #include <vector>
 #include <WebServer.h>
 #include <LittleFS.h>
+#include <PicoMQTT.h>
+PicoMQTT::Client mqttClient("10.0.0.10");
+
 // ------------------------------- Function Declerations ---------------------------
 // Handles insertion of the base server url (IP) in the brightness (shows the gui)
 void handle_root();
@@ -182,6 +185,18 @@ void handle_color() {
   }
 }
 
+void handleColor(const char *payload) {
+    long hex_value = strtol(payload, NULL, 16);
+    byte r = (hex_value >> 16) & 0xFF;
+    byte g = (hex_value >> 8) & 0xFF;
+    byte b = hex_value & 0xFF;
+
+    CRGB new_color = CRGB(r, g, b);
+    switch_color(new_color);
+    auto_mode = false;
+}
+
+
 // Handles the press of the set to warm button, to set the strip to warm color.
 void handle_warm() {
   switch_color(WARM);
@@ -287,11 +302,19 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started on: ");
   Serial.print(WiFi.localIP());
+
+    /*
+    Initialize MQTT Client
+  */
+  mqttClient.subscribe("color", [](const char * payload) {handleColor(payload);});
+  mqttClient.begin();
 }
 // --------------------------------------------------- LOOP -------------------------------------------------------------
 
 void loop() {
+  mqttClient.loop();
   // Change strip colors at sunrise and sunset.
+  /*
   server.handleClient();
   // Get the current time.
   if(auto_mode) {
@@ -321,6 +344,7 @@ void loop() {
       }
     }
   }
+  */
 }
 
 // ----------------------------------------------- Color Functions ----------------------------------------------------------
