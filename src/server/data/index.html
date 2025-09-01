@@ -102,6 +102,13 @@
         input[type="range"] {
             width: 200px;
         }
+		
+		.manual {
+			display: flex;
+			flex-direction: row;
+			gap: 10vw;
+			padding: 2vw;
+		}
     </style>
 </head>
 <body>
@@ -256,27 +263,37 @@
             </div>
         </div>
 
-        <!-- Container #3 - Color -->
-        <div class="container">
-            <h2>Color</h2>
-            <p>Click a button to change the color.</p>
-            <div class="organized-col">
-                <button class="styled-button" onclick="sendApiCall('/warm')">Set to Warm</button>
-                <button class="styled-button" onclick="sendApiCall('/cold')">Set to Cold</button>
-                <button class="styled-button" onclick="sendApiCall('/auto')">Set to Auto</button>
-                <input type="color" onchange="setColor(this.value)" id="colorPicker" value="#ff0000"/>
-            </div>
-        </div>
 
-        <!-- Container #4 - Brightness -->
-        <div class="container organized-col">
-            <h2>Brightness</h2>
-            <form class="organized-col" action="/brightness">
-                <input type="range" name="value" min="0" max="255" step="1" value="128" id="brightnessSlider">
-                <input class="styled-button" type="submit" value="Set Brightness">
-            </form>
-        </div>
-    </div>
+		<div class="container">
+			<div class="manual">
+				<!-- Container #3 - Color -->
+				<div class="organized-col">
+					<h2>Color</h2>
+					<p>Click a button to change the color.</p>
+					<div class="organized-col">
+					<!--
+						<button class="styled-button" onclick="sendApiCall('/warm')">Set to Warm</button>
+						<button class="styled-button" onclick="sendApiCall('/cold')">Set to Cold</button>
+						<button class="styled-button" onclick="sendApiCall('/auto')">Set to Auto</button>
+					-->
+						<input type="color" onchange="setColor(this.value)" id="colorPicker" value="#ff0000"/>
+					</div>
+				</div>
+
+				<!-- Container #4 - Brightness -->
+				<div class="organized-col">
+					<h2>Brightness</h2>
+					<input type="range" onchange="setBrightness(this.value)" name="value" min="0" max="255" step="1" value="128" id="brightnessSlider">
+					<!--
+					<form class="organized-col" action="/brightness">
+						
+						<input class="styled-button" type="submit" value="Set Brightness">
+					</form>
+					-->
+				</div>
+			</div>
+		</div>
+	</div>
 
     <script>
         // Generic API Call JavaScript to handle all kinds of API Calls
@@ -285,7 +302,7 @@
                 const response = await fetch(endpoint);
                 if (response.ok) {
                     const message = await response.text();
-                    alert('Success: ' + message);
+                    console.log('Success: ' + message);
                 } else {
                     alert('Error: ' + response.status + ' ' + response.statusText);
                 }
@@ -301,6 +318,11 @@
             console.log(hex);
             await sendApiCall(`/setColor?hex=${hex}`);
         }
+		
+		async function setBrightness(brightness) {
+			console.log(brightness);
+			await sendApiCall(`/setBrightness?brightness=${brightness}`);
+		}
 
         // Load current brightness value (you can modify this to get from ESP32)
         document.addEventListener('DOMContentLoaded', function() {

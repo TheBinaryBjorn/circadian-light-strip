@@ -35,33 +35,32 @@ void police_pattern();
 // Define LED Aarray.
 CRGB leds[NUM_LEDS];
 
-/*
-  1 - Off
-  2 - Off
-  3 - Off
-  4 - Off
-  5 - Off
-  6 - Sunrise - On - Bluest
-  7 - Blue
-  8
-  9
-  10
-  11
-  12
-  13
-  14
-  15
-  16
-  17
-  18
-  19 - Sunset - Lightly Warm
-  20 - Warm
-  21 - Warmest
-  22 - Sleep - Off
-  23
-  24
-  0
-*/
+const String circadianColors[] = {
+  "000000", // 0:00
+  "000000", // 1:00
+  "000000", // 2:00
+  "000000", // 3:00
+  "000000", // 4:00
+  "000000", // 5:00
+  "FFA657", // 6:00
+  "FFBB83", // 7:00
+  "FFCEAE", // 8:00
+  "FFDED1", // 9:00
+  "FFEDE2", // 10:00
+  "FFF7F1", // 11:00
+  "FFFFFF", // 12:00
+  "FFF7F1", // 13:00
+  "FFEDE2", // 14:00
+  "FFDED1", // 15:00
+  "FFB19D", // 16:00 (Interpolated from 4600K)
+  "FF8369", // 17:00 (Interpolated from 4600K)
+  "FF5634", // 18:00 (Interpolated from 4600K)
+  "FF2800", // 19:00 (Your specified 2700K color)
+  "FF2800", // 20:00
+  "FF2800", // 21:00
+  "FF2800", // 22:00
+  "000000" // 23:00
+};
 const CRGB COLD = CRGB::Cyan;
 const CRGB WARM = CRGB(255,40,0);
 // For future use, gradual warming.
@@ -92,10 +91,16 @@ const int SUNSET = 19;
 // Flags to ensure color is switched only once at needed time.
 int global_brightness = 127;
 
+long last_hour = -1;
+bool circadian_mode;
+
 // Define the data pin I'm using (D23)
 #define DATA_PIN 23
 
-
+/*
+  Receives a color in hex value, converts it to rgb and switches
+  the led lights.
+*/
 void handleColor(const char *payload) {
     long hex_value = strtol(payload, NULL, 16);
     byte r = (hex_value >> 16) & 0xFF;
@@ -104,6 +109,23 @@ void handleColor(const char *payload) {
 
     CRGB new_color = CRGB(r, g, b);
     switch_color(new_color);
+}
+
+/*
+  Receives an hour (0 to 23) and calls for handle color with
+  the corresponding circadian color.
+*/
+void handleHour(const char* hour) {
+  long current_hour = strtol(hour, NULL, 10);
+  if(current_hour != last_hour)
+    handleColor(circadianColors[current_hour].c_str());
+  last_hour = current_hour;
+}
+
+void handleBrightness(const char* new_brightness) {
+  long long_new_brightness = strtol(new_brightness, NULL, 10);
+  Serial.println(long_new_brightness);
+  set_brightness(static_cast<int>(long_new_brightness));
 }
 
 // ---------------------------------------------------- SETUP --------------------------------------------------------
@@ -135,6 +157,8 @@ void setup() {
     Initialize MQTT Client
   */
   mqttClient.subscribe("color", [](const char * payload) {handleColor(payload);});
+  mqttClient.subscribe("hour", [](const char* payload) {handleHour(payload);});
+  mqttClient.subscribe("brightness", [](const char* payload) {handleBrightness(payload);});
   mqttClient.begin();
 }
 // --------------------------------------------------- LOOP -------------------------------------------------------------
@@ -181,6 +205,20 @@ void switch_color(CRGB new_color) {
   pulse();
 }
 
+// Changes the strip's brightness to the given brightness, without changing the global brightness variable.
+void set_temp_brightness(int brightness) {
+  FastLED.setBrightness(brightness);
+  led_show();
+}
+
+// Changes the strip's brightness to the given brightness, including the global brightness variable.
+void set_brightness(int brightness) {
+  global_brightness = brightness;
+  FastLED.setBrightness(brightness);
+  led_show();
+}
+
+// -------------------------------------------------- Animations -----------------------------------------------------
 // Changes the strip's brightness to the given brightness
 void pulse() {
   std::vector<int> brightness_array = {0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255};
@@ -193,19 +231,6 @@ void pulse() {
       break;
     }
   }
-}
-
-// Changes the strip's brightness to the given brightness, without changing the global brightness variable.
-void set_temp_brightness(int brightness) {
-  FastLED.setBrightness(brightness);
-  led_show();
-}
-
-// Changes the strip's brightness to the given brightness, including the global brightness variable.
-void set_brightness(int brightness) {
-  global_brightness = brightness;
-  FastLED.setBrightness(brightness);
-  led_show();
 }
 
 // A wave pattern for the led strip.
