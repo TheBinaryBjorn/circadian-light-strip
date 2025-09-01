@@ -38,6 +38,7 @@ int global_brightness = 127;
 const String WARM = "FF2800";
 const String COLD = "00FFFF";
 
+
 // Handles the press of the set to warm button, to set the strip to warm color.
 void handleWarm() {
   publishColor(WARM.c_str());
@@ -92,11 +93,27 @@ void handleColor() {
   // Send message to registered clients (RGB Controllers) to change color.
   // MQTT BROKER
   publishColor(color.c_str());
+  server.send(200, "text/plain", "Color set to " + color);
 }
 
 void publishColor(const char* colorHex) {
     mqttBroker.publish("color", colorHex);
-} 
+}
+
+void publishHour(int hour) {
+  mqttBroker.publish("hour", std::to_string(hour).c_str());
+}
+
+void publishBrightness(const char* brightness) {
+  mqttBroker.publish("brightness", brightness);
+}
+
+void handleBrightness() {
+  // Extract brightness from server parameters.
+  String brightness = server.arg("brightness");
+  publishBrightness(brightness.c_str());
+  server.send(200, "text/plain", "Brightness set to " + brightness);
+}
 
 void setup() {
   /* 
@@ -173,6 +190,7 @@ void setup() {
   server.on("/cold", handleCold);
   server.on("/warm",handleWarm);
   server.on("/auto",handleAuto);
+  server.on("/setBrightness", handleBrightness);
   server.begin();
   Serial.println("HTTP Server: Up.");
   Serial.print("Server IP: ");
@@ -196,20 +214,36 @@ void loop() {
 
       int current_hour = timeinfo.tm_hour;
       Serial.println(current_hour);
-      if(current_hour >= SUNSET && !warm_set) {
-        publishColor(WARM.c_str());
-        warm_set = true;
-        cold_set = false;
-      }
-
-      if(current_hour >= SUNRISE && current_hour < SUNSET && !cold_set) {
-        publishColor(COLD.c_str());
-        cold_set = true;
-        warm_set = false;
-      }
+      publishHour(current_hour);
     }
   }
 }
+/*
+  0:00 - Black CRGB(0, 0, 0)
+  1:00 - Black CRGB(0, 0, 0)
+  2:00 - Black CRGB(0, 0, 0)
+  3:00 - Black CRGB(0, 0, 0)
+  4:00 - Black CRGB(0, 0, 0)
+  5:00 - Black CRGB(0, 0, 0)
+  6:00 - Sunrise - 2700K - CRGB(255, 166, 87)
+  7:00 3333K	CRGB(255, 187, 131)
+  8:00 3966K	CRGB(255, 206, 174)
+  9:00 	4600K	CRGB(255, 222, 209)
+  10:00 	5233K	CRGB(255, 235, 226)
+  11:00 	5866K	CRGB(255, 247, 241)
+  12:00 	6500K	CRGB(255, 255, 255)
+  13:00 	5866K	CRGB(255, 247, 241)
+  14:00 	5233K	CRGB(255, 235, 226)
+  15:00 	4600K	CRGB(255, 222, 209)
+  16:00 	3966K	CRGB(255, 206, 174)
+  17:00 3333K	CRGB(255, 187, 131)
+  18:00 	2700K	CRGB(255, 166, 87)
+  19:00 - Sunset 	2250K	CRGB(255, 126, 70)
+  20:00 	1800K	CRGB(255, 87, 53)
+  21:00 	1350K	CRGB(255, 47, 35)
+  22:00 900K	CRGB(255, 8, 18)
+  23:00 - Black CRGB(0, 0, 0)
+*/
 
 /*
   TO DO LIST:
