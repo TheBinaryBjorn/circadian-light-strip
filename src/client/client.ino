@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include <vector>
 #include <PicoMQTT.h>
-PicoMQTT::Client mqttClient("10.0.0.10");
+PicoMQTT::Client mqttClient("led-control.local");
 
 // ------------------------------- Function Declerations ---------------------------
 // Colors all the leds in the given range in the given color. Non Inclusive (start to end - 1)

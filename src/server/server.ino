@@ -4,6 +4,7 @@
 #include "secrets.h"
 #include <PicoMQTT.h>
 #include <time.h>
+#include <ESPmDNS.h>
 
 #define WEB_SERVER_PORT 80
 
@@ -171,6 +172,19 @@ void setup() {
     // Abort function/logic
     Serial.println("Aborting.");
   }
+
+  /*
+    Initialize Multicast Domain Name Server (mDNS)
+  */
+  const char* SERVER_DOMAIN = "led-control";
+  if(!MDNS.begin(SERVER_DOMAIN)) {
+    Serial.println("mDNS: Failed.");
+  }
+  MDNS.addService("http","tcp", 80);
+  MDNS.addService("mqtt", "tcp", 1883);
+  Serial.print("\nmDNS: started on ");
+  Serial.print(SERVER_DOMAIN);
+  Serial.print(".\n");
 
   // Initialize the time from the NTP Server
   configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
