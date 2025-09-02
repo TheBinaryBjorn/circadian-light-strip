@@ -36,30 +36,30 @@ void police_pattern();
 CRGB leds[NUM_LEDS];
 
 const String circadianColors[] = {
-  "000000", // 0:00
-  "000000", // 1:00
-  "000000", // 2:00
-  "000000", // 3:00
-  "000000", // 4:00
-  "000000", // 5:00
-  "FFA657", // 6:00
-  "FFBB83", // 7:00
-  "FFCEAE", // 8:00
-  "FFDED1", // 9:00
-  "FFEDE2", // 10:00
-  "FFF7F1", // 11:00
-  "FFFFFF", // 12:00
-  "FFF7F1", // 13:00
-  "FFEDE2", // 14:00
-  "FFDED1", // 15:00
-  "FFB19D", // 16:00 (Interpolated from 4600K)
-  "FF8369", // 17:00 (Interpolated from 4600K)
-  "FF5634", // 18:00 (Interpolated from 4600K)
-  "FF2800", // 19:00 (Your specified 2700K color)
-  "FF2800", // 20:00
-  "FF2800", // 21:00
-  "FF2800", // 22:00
-  "000000" // 23:00
+  "000000", // 0:00 - Night (off)
+  "000000", // 1:00 - Night (off)
+  "000000", // 2:00 - Night (off)
+  "000000", // 3:00 - Night (off)
+  "000000", // 4:00 - Night (off)
+  "0F0300", // 5:00 - 
+  "FF2800", // 6:00 - Sunrise (Warm Orange) (G:60)
+  "FF5000", // 7:00 - Orange (G:80)
+  "FF6400", // 8:00 - Light Orange (G:100)
+  "FF7800", // 9:00 - Warm Yellow (G:100)
+  "FFC800", // 10:00 - Yellow (G:180)
+  "00FFFF", // 11:00 - Cyan
+  "00FFFF", // 12:00 - Cyan
+  "00FFFF", // 13:00 - Cyan
+  "00FFFF", // 14:00 - Cyan
+  "FFC800", // 15:00 - Yellow (G:180)
+  "FF7800", // 16:00 - Warm Yellow (G:100)
+  "FF6400", // 17:00 - Light Orange (G:100)
+  "FF5000", // 18:00 - Orange (G:80)
+  "FF2800", // 19:00 - Sunset (2700K) (G:60)
+  "BF1E00", // 20:00 - (G:40)
+  "7F1400", // 21:00 - (G:40)
+  "3F0A00", // 22:00 - (G:40)
+  "000000"  // 23:00 - Night (off)
 };
 const CRGB COLD = CRGB::Cyan;
 const CRGB WARM = CRGB(255,40,0);
@@ -108,7 +108,7 @@ void handleColor(const char *payload) {
     byte b = hex_value & 0xFF;
 
     CRGB new_color = CRGB(r, g, b);
-    switch_color(new_color);
+    color_all_leds(new_color);
 }
 
 /*
