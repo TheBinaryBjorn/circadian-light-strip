@@ -23,7 +23,7 @@ The system is built on a publish-subscribe model to ensure seamless communicatio
 - MQTT: Based on the common IoT publish-subscribe protocol, this allows multiple ESP32 controllers to communicate and share data efficiently.
 - Server: One ESP32 acts as the main server, functioning as an MQTT broker and an HTTP server to host the web interface.
 - Clients: Client ESP32s subscribe to MQTT topics to receive commands (color hex codes, time data) and update their LED strips accordingly.
-- Web Interface: The user interface is hosted directly on the microcontroller using LittleFS. This allows for rapid development and testing—you only need to reflash the code when a new core feature is added, not for every minor change to the HTML or JavaScript.
+- Web Interface: The user interface is hosted directly on the microcontroller using LittleFS. This allows for rapid development and testing, you only need to reflash the code when a new core feature is added, not for every minor change to the HTML or JavaScript.
 
 ### Architecture Diagram
 <img alt="IoT-RGB-Architecture" src="https://github.com/user-attachments/assets/94e82b6e-9f95-4d8a-b9bb-08408a2cb040" />
