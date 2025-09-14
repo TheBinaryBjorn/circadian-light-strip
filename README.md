@@ -25,9 +25,11 @@ The system is built on a publish-subscribe model to ensure seamless communicatio
 - Clients: Client ESP32s subscribe to MQTT topics to receive commands (color hex codes, time data) and update their LED strips accordingly.
 - Web Interface: The user interface is hosted directly on the microcontroller using LittleFS. This allows for rapid development and testing—you only need to reflash the code when a new core feature is added, not for every minor change to the HTML or JavaScript.
 
+### Architecture Diagram
+<img alt="IoT-RGB-Architecture" src="https://github.com/user-attachments/assets/94e82b6e-9f95-4d8a-b9bb-08408a2cb040" />
+
 ### 🗺️ Wiring Diagram
 Connect your components as shown in the diagram below. A capacitor is essential to prevent damage to the LED strip from a sudden power surge.
-<img alt="IoT-RGB-Architecture" src="https://github.com/user-attachments/assets/94e82b6e-9f95-4d8a-b9bb-08408a2cb040" />
 
 <img alt="Circuit Diagram" src="https://github.com/user-attachments/assets/b78fec91-d8ff-47c7-aaf4-d1e0f1d9c371" />
 
