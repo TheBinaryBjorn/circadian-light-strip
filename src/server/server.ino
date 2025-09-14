@@ -197,7 +197,6 @@ void setup() {
   /*
     Initialize Web Server.
     How would I test that? Just try to access the server?
-
   */
   server.on("/",handleRoot);
   server.on("/setColor", handleColor);
