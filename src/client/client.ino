@@ -40,7 +40,6 @@ const String circadianColors[] = {
   "000000"  // 23:00 - Night (off)
 };
 
-int pattern_counter = 0;
 
 // WiFi constants:
 const char* SSID = WIFI_SSID;
@@ -49,21 +48,9 @@ const char* PASSWORD = WIFI_PASSWORD;
 // Communications Constants
 const int ESP32_STANDARD_BAUD_RATE = 115200;
 
-// Time Constants (Milisec)
-const long ONE_MINUTE = 60000;
-const long FIVE_MINUTES = 5 * ONE_MINUTE;
-const long TEN_MINUTES = 2 * FIVE_MINUTES;
-const long THIRTY_MINUTES = 3 * TEN_MINUTES;
-const long ONE_HOUR = 6 * TEN_MINUTES;
-const int SUNRISE = 6;
-const int SUNSET = 19;
 
 // Flags to ensure color is switched only once at needed time.
 int global_brightness = 127;
-CRGB global_color = CRGB::Green
-
-long last_hour = -1;
-bool circadian_mode;
 
 // Define the data pin I'm using (D23)
 #define DATA_PIN 23
@@ -79,7 +66,9 @@ void handleColor(const char *payload) {
     byte b = hex_value & 0xFF;
 
     CRGB new_color = CRGB(r, g, b);
-    color_all_leds(new_color);
+    CRGB old_color = leds[0];
+    if(new_color != old_color)
+      color_all_leds(new_color);
 }
 
 /*
@@ -88,13 +77,19 @@ void handleColor(const char *payload) {
 */
 void handleHour(const char* hour) {
   long current_hour = strtol(hour, NULL, 10);
-  if(current_hour != last_hour)
-    handleColor(circadianColors[current_hour].c_str());
-  last_hour = current_hour;
+  if(current_hour > 23 || current_hour < 0) {
+    Serial.println("Error: Hour must be 0-23");
+    return;
+  }
+  handleColor(circadianColors[current_hour].c_str());
 }
 
 void handleBrightness(const char* new_brightness) {
   long long_new_brightness = strtol(new_brightness, NULL, 10);
+  if(long_new_brightness < 0 || long_new_brightness > 255) {
+    Serial.println("Error: brightness should be 0-255");
+    return;
+  }
   Serial.println(long_new_brightness);
   set_brightness(static_cast<int>(long_new_brightness));
 }
